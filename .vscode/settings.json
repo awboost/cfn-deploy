@@ -1,0 +1,9 @@
+{
+  "typescript.preferences.importModuleSpecifierEnding": "js",
+  "[javascript][typescript]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

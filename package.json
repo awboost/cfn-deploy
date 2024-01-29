@@ -1,0 +1,77 @@
+{
+  "name": "@awboost/cfn-deploy",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Command line tool to deploy stacks to CloudFormation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/awboost/cfn-deploy"
+  },
+  "bin": {
+    "cfn-deploy": "./lib/main.js"
+  },
+  "exports": {
+    ".": {
+      "default": "./lib/commands.js",
+      "types": "./lib/commands.d.ts"
+    },
+    "./reporters/*": {
+      "default": "./lib/reporters/*.js",
+      "types": "./lib/reporters/*.d.ts"
+    },
+    "./util/*": {
+      "default": "./lib/util/*.js",
+      "types": "./lib/util/*.d.ts"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Gordon Leigh"
+  },
+  "files": [
+    "src/",
+    "lib/",
+    "!*.test.*"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run compile && npm run test && npm run lint",
+    "clean": "rm -rf lib/ *.tsbuildinfo",
+    "compile": "tsc",
+    "lint": "eslint src/ --ext=ts",
+    "test": "node --enable-source-maps --import=./swc.mjs --test src/**/*.test.ts",
+    "watch:compile": "tsc --watch --incremental",
+    "watch:test": "node --enable-source-maps --watch --import=./swc.mjs --test src/**/*.test.ts"
+  },
+  "devDependencies": {
+    "@swc-node/register": "^1.6.8",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^18.18.13",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "@awboost/aws-vault-credentials": "^0.2.1",
+    "@awboost/cfn-template-builder": "^0.3.3",
+    "@aws-sdk/client-cloudformation": "^3.501.0",
+    "@aws-sdk/client-s3": "^3.501.0",
+    "@aws-sdk/lib-storage": "^3.501.0",
+    "@aws-sdk/types": "^3.496.0",
+    "chalk": "^5.3.0",
+    "cli-spinners": "^2.9.2",
+    "commander": "^11.1.0",
+    "debug": "^4.3.4",
+    "log-symbols": "^6.0.0",
+    "log-update": "^6.0.0",
+    "p-limit": "^5.0.0",
+    "pretty-bytes": "^6.1.1",
+    "string-length": "^6.0.0"
+  }
+}
