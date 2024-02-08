@@ -41,6 +41,7 @@
     "clean": "rm -rf lib/ *.tsbuildinfo",
     "compile": "tsc",
     "lint": "eslint src/ --ext=ts",
+    "preversion": "npm run build",
     "watch:compile": "tsc --watch --incremental",
     "watch:test": "node --enable-source-maps --watch --import=./swc.mjs --test src/**/*.test.ts"
   },

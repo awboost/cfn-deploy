@@ -61,6 +61,10 @@ program
   .option("-b, --bucket <value>", "the S3 bucket name to upload to")
   .option("--changeset-name <value>", "an optional name for the changeset")
   .option("--create", "create the stack with this changeset")
+  .option(
+    "--create-if-not-exists",
+    "create the stack if it doesn't exist, otherwise update it",
+  )
   .option("--no-execute", "don't execute the changeset, just upload it")
   .requiredOption("--stack-name <value>", "the name of the stack")
   .action(async (templateUrl: string, _, cmd: Command) => {

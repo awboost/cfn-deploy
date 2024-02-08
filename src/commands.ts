@@ -57,6 +57,7 @@ export type ParameterProvider = (
 export type CreateChangeSetOptions = {
   bucket?: string;
   create?: boolean;
+  createIfNotExists?: boolean;
   changesetName?: string;
   execute?: boolean;
   parameterFile?: string;
@@ -162,6 +163,9 @@ export async function createChangeSet(
   const timestamp = new Date().toISOString().replace(/[T:.]/g, "-");
   const changeSetName = options.changesetName ?? `Change-${timestamp}`;
 
+  const stack = await getStack(cfn, options.stackName);
+  const createStack = options.create ?? (options.createIfNotExists && !stack);
+
   const parameters: Parameter[] = [];
 
   // add the name of the bucket as a parameter if required
@@ -173,11 +177,6 @@ export async function createChangeSet(
   }
 
   if (typeof options.parameters === "function") {
-    let stack: Stack | undefined;
-
-    if (!options.create) {
-      stack = await getStack(cfn, options.stackName);
-    }
     const params = await options.parameters(stack);
     parameters.push(...params);
   } else if (options.parameters) {
@@ -198,9 +197,9 @@ export async function createChangeSet(
   const createResult = await cfn.send(
     new CreateChangeSetCommand({
       ChangeSetName: changeSetName,
-      ChangeSetType: options.create ? "CREATE" : "UPDATE",
+      ChangeSetType: createStack ? "CREATE" : "UPDATE",
       ClientToken: clientToken,
-      OnStackFailure: options.create ? "DELETE" : "ROLLBACK",
+      OnStackFailure: createStack ? "DELETE" : "ROLLBACK",
       Parameters: parameters,
       ResourceTypes: [...usedResourceTypes],
       StackName: options.stackName,
@@ -289,7 +288,7 @@ export async function deleteStack(
   const cfn = new CloudFormationClient({ credentials, region: options.region });
   const reporter = new StackReporter();
 
-  const stack = await getStack(cfn, stackNameOrId);
+  const stack = await getStack(cfn, stackNameOrId, { includeInReview: true });
   if (!stack) {
     console.log(`Stack ${stackNameOrId} not found`);
     return false;
@@ -361,18 +360,24 @@ async function waitForChangeset(
 async function getStack(
   client: CloudFormationClient,
   stackNameOrId: string,
+  opts?: { includeDeleted?: boolean; includeInReview?: boolean },
 ): Promise<Stack | undefined> {
-  const stackPages = paginateDescribeStacks(
-    { client },
-    { StackName: stackNameOrId },
-  );
+  const stackPages = paginateDescribeStacks({ client }, {});
 
   for await (const page of stackPages) {
     if (!page.Stacks) {
       return;
     }
     for (const stack of page.Stacks) {
-      if (stack.StackStatus !== "DELETE_COMPLETE") {
+      const nameMatch = stackNameOrId.startsWith("arn:")
+        ? stack.StackId === stackNameOrId
+        : stack.StackName === stackNameOrId;
+
+      const statusMatch =
+        (opts?.includeDeleted || stack.StackStatus !== "DELETE_COMPLETE") &&
+        (opts?.includeInReview || stack.StackStatus !== "REVIEW_IN_PROGRESS");
+
+      if (nameMatch && statusMatch) {
         return stack;
       }
     }
