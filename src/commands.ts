@@ -21,7 +21,14 @@ import chalk from "chalk";
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  sep as pathSeparator,
+  resolve,
+} from "node:path";
 import { Readable } from "node:stream";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
@@ -115,7 +122,7 @@ export async function createChangeSet(
 ): Promise<DescribeChangeSetOutput> {
   const credentials = getCredentials(options);
   const s3 = new S3Client({ credentials, region: options.region });
-  const url = new URL(templateUrl);
+  const url = normalizeUrl(templateUrl);
 
   let templateKey: string;
   let bucket = options.bucket;
@@ -123,9 +130,9 @@ export async function createChangeSet(
 
   if (url.protocol === "file:") {
     if (!bucket) {
-      throw new Error(`can't specify file URL without specifying bucket`);
+      throw new Error(`can't specify local file without specifying bucket`);
     }
-    const templatePath = fileURLToPath(templateUrl);
+    const templatePath = fileURLToPath(url);
     template = JSON.parse(await readFile(templatePath, "utf8"));
     await upload(templatePath, { ...options, bucket }, { s3 });
     templateKey = basename(templatePath);
@@ -369,5 +376,21 @@ async function getStack(
         return stack;
       }
     }
+  }
+}
+
+function normalizeUrl(value: string): URL {
+  if (
+    isAbsolute(value) ||
+    value.startsWith(`.${pathSeparator}`) ||
+    value.startsWith(`..${pathSeparator}`)
+  ) {
+    return new URL(`file://${resolve(value)}`);
+  }
+
+  try {
+    return new URL(value);
+  } catch (cause) {
+    throw new Error(`expected path or URL, got "${value}"`);
   }
 }
