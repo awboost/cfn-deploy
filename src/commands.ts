@@ -190,18 +190,14 @@ export async function createChangeSet(
     );
   }
 
-  const usedResourceTypes = new Set(
-    Object.values(template.Resources).map((x) => x.Type),
-  );
-
   const createResult = await cfn.send(
     new CreateChangeSetCommand({
+      Capabilities: ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
       ChangeSetName: changeSetName,
       ChangeSetType: createStack ? "CREATE" : "UPDATE",
       ClientToken: clientToken,
       OnStackFailure: createStack ? "DELETE" : "ROLLBACK",
       Parameters: parameters,
-      ResourceTypes: [...usedResourceTypes],
       StackName: options.stackName,
       TemplateURL: `https://${bucket}.s3.amazonaws.com/${templateKey}`,
     }),
