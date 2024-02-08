@@ -58,7 +58,7 @@ export type CreateChangeSetOptions = {
   bucket?: string;
   create?: boolean;
   changesetName?: string;
-  noExecute?: boolean;
+  execute?: boolean;
   parameterFile?: string;
   parameters?: Record<string, string> | ParameterProvider;
   stackName: string;

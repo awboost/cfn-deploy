@@ -70,6 +70,9 @@ program
     if (changeset.Status === "FAILED") {
       process.exit(1);
     }
+    if (!options.execute) {
+      return;
+    }
 
     const result = await executeChangeSet(changeset.ChangeSetId!, options, {
       changeset,
