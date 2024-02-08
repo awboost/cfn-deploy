@@ -1,6 +1,6 @@
 {
   "name": "@awboost/cfn-deploy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Command line tool to deploy stacks to CloudFormation",
   "repository": {
