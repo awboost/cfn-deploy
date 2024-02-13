@@ -6,7 +6,7 @@ import type {
 import chalk from "chalk";
 import logSymbols from "log-symbols";
 import stringLength from "string-length";
-import { Tty } from "../internal/tty.js";
+import { Tty } from "../util/tty.js";
 import { Spinner } from "./spinner.js";
 
 // there isn't yet a AWS::CloudFormation::* id for this

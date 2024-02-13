@@ -1,6 +1,6 @@
 import logSymbols from "log-symbols";
 import prettyBytes from "pretty-bytes";
-import { Tty } from "../internal/tty.js";
+import { Tty } from "../util/tty.js";
 import { Spinner } from "./spinner.js";
 
 export type AssetProgress = {
