@@ -92,29 +92,34 @@ export async function upload(
   });
 
   console.log(`\nUploading assets:`);
+
   const status = new AssetReporter();
-  emitter.on("progress", (e) => status.onProgress(e));
+  try {
+    emitter.on("progress", (e) => status.onProgress(e));
 
-  const templateText = await readFile(templatePath, "utf-8");
-  const template: Template = JSON.parse(templateText);
+    const templateText = await readFile(templatePath, "utf-8");
+    const template: Template = JSON.parse(templateText);
 
-  emitter.addAsset({
-    fileName: basename(templatePath),
-    createReadStream: () => Readable.from(templateText),
-  });
+    emitter.addAsset({
+      fileName: basename(templatePath),
+      createReadStream: () => Readable.from(templateText),
+    });
 
-  const assetMap = template.Mappings?.[AssetMap.FirstLevelKey];
-  if (assetMap) {
-    for (const asset of Object.values(assetMap)) {
-      emitter.addAsset({
-        fileName: asset["FileName"],
-        createReadStream: () =>
-          createReadStream(join(dirname(templatePath), asset["FileName"])),
-      });
+    const assetMap = template.Mappings?.[AssetMap.FirstLevelKey];
+    if (assetMap) {
+      for (const asset of Object.values(assetMap)) {
+        emitter.addAsset({
+          fileName: asset["FileName"],
+          createReadStream: () =>
+            createReadStream(join(dirname(templatePath), asset["FileName"])),
+        });
+      }
     }
-  }
 
-  await emitter.done();
+    await emitter.done();
+  } finally {
+    status.close();
+  }
 }
 
 export async function createChangeSet(
