@@ -4,12 +4,14 @@ import type {
 } from "@awboost/cfn-template-builder/builder";
 import type {
   AssetEmitterProgress,
-  AssetInfo,
   SchedulerFunction,
 } from "@awboost/cfn-template-builder/emitter";
+import {
+  contentLength,
+  makeContentStream,
+} from "@awboost/cfn-template-builder/util/content";
 import { S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import { Transform } from "node:stream";
 import limit from "p-limit";
 import { TypedEventEmitterBase } from "../internal/events.js";
 
@@ -37,7 +39,7 @@ export class S3AssetEmitter
   implements AssetEmitter
 {
   private readonly options: S3AssetEmitterResolvedOptions;
-  private readonly results: PromiseLike<AssetInfo>[] = [];
+  private readonly results: PromiseLike<void>[] = [];
   private readonly s3: S3Client;
 
   constructor(options: S3AssetEmitterOptions) {
@@ -61,49 +63,45 @@ export class S3AssetEmitter
 
   /**
    * Wait for all assets to be emitted.
-   * @returns Information about each asset that was emitted.
    */
-  public async done(): Promise<AssetInfo[]> {
-    return Promise.all(this.results);
+  public async done(): Promise<void> {
+    await Promise.all(this.results);
   }
 
-  private async emitAsset(asset: AssetLike): Promise<AssetInfo> {
-    const contentStream = asset.createReadStream();
-    let measuredSize = 0;
+  private async emitAsset(asset: AssetLike): Promise<void> {
+    let writtenBytes = 0;
+
+    const totalBytes = await contentLength(asset.content);
+    const contentStream = makeContentStream(asset);
 
     const upload = new Upload({
       client: this.s3,
       params: {
-        Body: contentStream.pipe(
-          new Transform({
-            transform: (chunk, encoding, callback) => {
-              measuredSize += chunk.length;
-              callback(undefined, chunk);
-            },
-          }),
-        ),
+        Body: contentStream,
         Bucket: this.options.bucket,
         Key: this.options.objectKeyPrefix + asset.fileName,
       },
     });
 
     upload.on("httpUploadProgress", (progress) => {
+      if (progress.loaded) {
+        writtenBytes = progress.loaded;
+      }
+
       this.emit("progress", {
         fileName: asset.fileName,
-        totalBytes: progress.total,
+        totalBytes: totalBytes ?? progress.total,
         writtenBytes: progress.loaded,
       });
     });
 
     await upload.done();
 
-    const info = {
-      fileName: asset.fileName,
-      totalBytes: measuredSize,
-    };
-
     // report completion measured size
-    this.emit("progress", { complete: true, ...info });
-    return info;
+    this.emit("progress", {
+      complete: true,
+      fileName: asset.fileName,
+      totalBytes: totalBytes ?? writtenBytes,
+    });
   }
 }

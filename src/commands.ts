@@ -30,13 +30,13 @@ import {
   resolve,
 } from "node:path";
 import { Readable } from "node:stream";
+import { text } from "node:stream/consumers";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import {
   getCredentials,
   type CredentialOptions,
 } from "./internal/credentials.js";
-import { readToEnd } from "./internal/read-to-end.js";
 import { streamChangeSetEvents } from "./internal/stream-stack-events.js";
 import { AssetReporter } from "./reporters/asset-reporter.js";
 import { StackReporter } from "./reporters/stack-reporter.js";
@@ -102,16 +102,18 @@ export async function upload(
 
     emitter.addAsset({
       fileName: basename(templatePath),
-      createReadStream: () => Readable.from(templateText),
+      content: templateText,
     });
 
-    const assetMap = template.Mappings?.[AssetMap.FirstLevelKey];
+    const assetMap = template.Mappings?.[AssetMap.MapName];
     if (assetMap) {
       for (const asset of Object.values(assetMap)) {
         emitter.addAsset({
           fileName: asset["FileName"],
-          createReadStream: () =>
-            createReadStream(join(dirname(templatePath), asset["FileName"])),
+          content: createReadStream(
+            join(dirname(templatePath), asset["FileName"]),
+          ),
+          integrity: asset["Integrity"],
         });
       }
     }
@@ -150,9 +152,7 @@ export async function createChangeSet(
     const result = await s3.send(
       new GetObjectCommand({ Bucket: bucket, Key: templateKey }),
     );
-    template = JSON.parse(
-      (await readToEnd(result.Body as Readable)).toString("utf-8"),
-    );
+    template = JSON.parse(await text(result.Body as Readable));
   } else {
     throw new Error(`unexpected template URL protocol "${url.protocol}"`);
   }

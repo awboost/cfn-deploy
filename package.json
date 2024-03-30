@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "@awboost/aws-vault-credentials": "^0.2.1",
-    "@awboost/cfn-template-builder": "^0.3.3",
+    "@awboost/cfn-template-builder": "^0.4.1",
     "@aws-sdk/client-cloudformation": "^3.501.0",
     "@aws-sdk/client-s3": "^3.501.0",
     "@aws-sdk/lib-storage": "^3.501.0",
